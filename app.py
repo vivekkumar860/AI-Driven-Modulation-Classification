@@ -402,7 +402,7 @@ with tabs[0]:
         summary_df = pd.DataFrame(summary_rows)
         st.dataframe(summary_df, hide_index=True)
         st.download_button('Download Summary as CSV', get_csv_download_link(summary_df, 'batch_summary.csv'), file_name='batch_summary.csv', mime='text/csv', help='Download the above summary table as a CSV file.')
-else:
+if not uploaded_files:
     st.info('Awaiting file upload.')
 
     # --- Confusion Matrix (if ground truth provided) ---
