@@ -1,8 +1,8 @@
 import streamlit as st
 import numpy as np
-import tensorflow as tf
 import pandas as pd
 import plotly.graph_objs as go
+import onnxruntime as ort
 import io
 import os
 from datetime import datetime
@@ -108,22 +108,19 @@ with tabs[0]:
 
     user_model_file = st.sidebar.file_uploader('Upload your Keras model (.h5)', type=['h5'], help='Optional: Use your own trained Keras model.')
 
-    # --- Model loading logic ---
-    def load_model(model_path):
+    # --- ONNX Model Loading ---
+    @st.cache_resource
+    def load_onnx_model():
         try:
-            model = tf.keras.models.load_model(model_path)
-            return model
+            session = ort.InferenceSession("mod_classifier.onnx")
+            return session
         except Exception as e:
-            st.error(f"Error loading model: {e}")
+            st.error(f"Error loading ONNX model: {e}")
             return None
 
-    model_path = 'mod_classifier.h5'
-    if user_model_file is not None:
-        model_path = save_uploaded_model(user_model_file)
-
-    model = load_model(model_path)
-    if model is None:
-        st.error("Model file could not be loaded. Please ensure a valid Keras model is present.")
+    session = load_onnx_model()
+    if session is None:
+        st.error("ONNX model file 'mod_classifier.onnx' not found or could not be loaded. Please ensure the file is present in the app directory.")
         st.stop()
 
     # --- Prediction history (session state) ---
@@ -165,6 +162,14 @@ with tabs[0]:
             return np.nan
         return 10 * np.log10(signal_power / noise_power)
 
+    # --- Prediction function using ONNX ---
+    def predict_onnx(iq_data):
+        # iq_data shape: (batch, 128, 2)
+        input_name = session.get_inputs()[0].name
+        inputs = {input_name: iq_data.astype(np.float32)}
+        preds = session.run(None, inputs)[0]
+        return preds
+
     # --- Main logic ---
     all_preds = []
     all_true = []
@@ -203,7 +208,7 @@ with tabs[0]:
             # --- Prediction ---
             with st.spinner('Running prediction...'):
                 try:
-                    preds = model.predict(iq_data_exp)
+                    preds = predict_onnx(iq_data_exp)
                     # If batch, show for first sample and allow selection
                     if preds.shape[0] > 1:
                         idx = st.number_input('Select sample in batch', min_value=0, max_value=preds.shape[0]-1, value=0, step=1, key=f'batch_{uploaded_file.name}')
@@ -251,9 +256,9 @@ with tabs[0]:
                     with subtabs[5]:
                         with st.expander("Show Model Summary"):
                             stringlist = []
-                            model.summary(print_fn=lambda x: stringlist.append(x))
-                            summary = '\n'.join(stringlist)
-                            st.code(summary)
+                            # The original code had model.summary, but model is no longer loaded.
+                            # This section will be removed or replaced with a placeholder if model info is needed.
+                            pass # Placeholder for model summary
                     with subtabs[6]:
                         snr = estimate_snr(iq_data_exp[idx])
                         st.metric("Estimated SNR (dB)", f"{snr:.2f}" if not np.isnan(snr) else "N/A")
