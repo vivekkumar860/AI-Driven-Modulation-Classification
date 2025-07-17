@@ -1,0 +1,21 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Specific Python build artifacts (can add more if you encounter other large files)
+*.so
+*.dylib
+*.pyd
+*.exe
+*.dll
+
+# PyTorch/TensorFlow specific saved models (if you have any)
+# You might want to track these with Git LFS if they are essential to your repo
+# but otherwise, consider ignoring if they get too big.
+# *.pt
+# *.pth
+# *.h5
+# *.keras
+# saved_models/

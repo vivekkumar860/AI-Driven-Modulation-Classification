@@ -226,6 +226,13 @@ with tabs[0]:
             st.error(f"ONNX inference error: {e}. Please check your model and input shape.")
             return None
 
+    def is_valid_npy(file_obj):
+        # Check .npy file magic number (first 6 bytes should be '\x93NUMPY')
+        file_obj.seek(0)
+        magic = file_obj.read(6)
+        file_obj.seek(0)
+        return magic == b'\x93NUMPY'
+
     # --- Main logic ---
     all_preds = []
     all_true = []
